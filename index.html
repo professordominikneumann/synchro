@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Synchronisierung 3D</title>
+  <meta name="description" content="Interaktives 3D-Modell einer Sperrsynchronisierung im Wechselgetriebe – schaltbar, mit Drehzahlangleichung und Schnittansicht.">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+<header class="top">
+  <h1>⚙️ Synchronisierung im Wechselgetriebe</h1>
+  <nav><a href="index.html" class="active">3D-Modell</a><a href="uebungen.html">Übungsaufgaben</a></nav>
+</header>
+<main>
+  <div class="layout">
+    <div>
+      <div class="viewer" id="viewer">
+        <div class="status-badge" id="badges"></div>
+        <div class="hint">Ziehen = drehen · Rechts­klick/2 Finger = verschieben · Mausrad = zoomen · Bauteil anfahren = Info</div>
+      </div>
+      <div class="below">
+        <div class="panel">
+          <h3>Drehzahlangleichung (bezogen auf die Hauptwelle)</h3>
+          <canvas class="plot" id="plot"></canvas>
+          <div class="legend">
+            <span><i style="background:#6b7785"></i>Hauptwelle / Synchronkörper</span>
+            <span><i style="background:#2f7de1"></i>Losrad 1. Gang</span>
+            <span><i style="background:#16a37a"></i>Losrad 2. Gang</span>
+            <span><i style="background:#ff7a1a"></i>Antriebswelle (Motor)</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Abwicklung der Verzahnungen (Draufsicht, aktive Seite)</h3>
+          <canvas class="plot" id="unroll"></canvas>
+          <div class="legend">
+            <span><i style="background:#c5cbd1"></i>Schiebemuffe</span>
+            <span><i style="background:#5d6973"></i>Synchronkörper</span>
+            <span><i style="background:#d0a443"></i>Synchronring</span>
+            <span><i style="background:#2c5596"></i>Kupplungsverzahnung Losrad</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="panel">
+        <h3>Gang schalten</h3>
+        <div class="gears" id="gears">
+          <button data-g="1">1</button><button data-g="0" class="sel">N</button><button data-g="2">2</button>
+        </div>
+        <div class="ctl"><span>Schaltkraft</span><output id="o-force"></output><input id="force" type="range" min="20" max="200" step="5" value="80"></div>
+        <div class="ctl"><span>Hauptwellendrehzahl (Fahrgeschw.)</span><output id="o-nout"></output><input id="nout" type="range" min="300" max="3000" step="50" value="1500"></div>
+        <div class="ctl"><span>Motordrehzahl (in Neutral)</span><output id="o-engine"></output><input id="engine" type="range" min="800" max="6000" step="50" value="2200"></div>
+        <div class="ctl"><span>Zeitlupe</span><output id="o-ts"></output><input id="ts" type="range" min="0.03" max="1" step="0.01" value="0.25"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Ablauf der Synchronisierung</h3>
+        <ul class="phases" id="phases"></ul>
+        <div class="msg" id="msg" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h3>Drehzahlen</h3>
+        <div class="values" id="values"></div>
+      </div>
+
+      <div class="panel toggles">
+        <h3>Ansicht</h3>
+        <div class="gears" id="views" style="margin-bottom:8px"><button data-v="all" style="font-size:13px">Gesamt</button><button data-v="sync" style="font-size:13px">Synchron&shy;einheit</button><button data-v="front" style="font-size:13px">Vorne</button></div>
+        <label><input type="checkbox" id="cut"> Schnittansicht</label>
+        <div class="ctl"><span>Schnittebene</span><output id="o-cutz"></output><input id="cutz" type="range" min="-6" max="6" step="0.1" value="0"></div>
+        <div class="ctl"><span>Explosionsansicht</span><output id="o-exp"></output><input id="exp" type="range" min="0" max="1" step="0.01" value="0"></div>
+        <label><input type="checkbox" id="lbl"> Bauteile beschriften</label>
+        <label><input type="checkbox" id="flow" checked> Kraftfluss hervorheben</label>
+        <label><input type="checkbox" id="sync" checked> Synchronring eingebaut</label>
+        <div class="flowchain" id="chain"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top:16px">
+    <h2 style="margin-top:4px">So funktioniert die Sperrsynchronisierung</h2>
+    <div class="theory">
+      <p><b>Aufgabe:</b> Beim Schalten drehen Losrad und Hauptwelle unterschiedlich schnell. Damit die Schiebemuffe geräuschlos und ohne Verschleiß in die Kupplungsverzahnung einspuren kann, müssen die Drehzahlen vorher <i>angeglichen</i> werden. Erst dann wird die formschlüssige Verbindung hergestellt.</p>
+      <p><b>Reibschluss vor Formschluss:</b> Der Synchronring bildet mit dem Reibkonus des Losrads eine kleine Kegelkupplung. Die axiale Schaltkraft wird durch den Kegel zu einer großen Normalkraft verstärkt – das Reibmoment bremst oder beschleunigt die freie Getriebeeingangsseite (Kupplungsscheibe, Antriebswelle, Vorgelegewelle, Losräder).</p>
+      <p><b>Sperrwirkung:</b> Solange ein Reibmoment wirkt (Δn ≠ 0), ist der Synchronring um eine halbe Zahnteilung verdreht. Seine Dachschrägen stehen den Muffenzähnen gegenüber und <i>sperren</i> die Muffe – egal wie stark man am Schalthebel drückt. Höhere Schaltkraft verkürzt nur die Synchronzeit.</p>
+      <p><b>Durchschalten:</b> Bei Gleichlauf verschwindet das Reibmoment. Die Muffe dreht den Ring über die Dachschrägen zurück, schiebt sich durch die Ringverzahnung und spurt in die Kupplungsverzahnung ein. Der Synchronring liegt danach <i>nicht</i> im Kraftfluss.</p>
+      <p><b>Hochschalten (1 → 2):</b> Das Losrad des 2. Gangs dreht zu schnell und muss abgebremst werden. <b>Runterschalten (2 → 1):</b> Das Losrad des 1. Gangs dreht zu langsam und muss beschleunigt werden. Beides zeigt das Diagramm.</p>
+      <p><b>Ohne Synchronring:</b> Schalte den Synchronring aus und lege einen Gang ein – die Zähne „ratschen“, weil die Drehzahldifferenz nicht abgebaut wird. Früher half nur Zwischengas bzw. Doppelkuppeln.</p>
+    </div>
+  </section>
+</main>
+<footer>Vereinfachtes Lehrmodell (2-Gang-Vorgelegegetriebe, Bauart Borg-Warner). Zähnezahlen: Konstante 16/24, 1. Gang 14/26, 2. Gang 20/20.</footer>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Übungen Synchronisierung</title>
+  <meta name="description" content="Übungsaufgaben zur Synchronisierung im Wechselgetriebe: Bauteile benennen, Kraftfluss, Ablauf, Verständnisfragen und Drehzahlberechnung.">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+<header class="top">
+  <h1>⚙️ Synchronisierung im Wechselgetriebe</h1>
+  <nav><a href="index.html">3D-Modell</a><a href="uebungen.html" class="active">Übungsaufgaben</a></nav>
+</header>
+<main>
+  <p class="lead" style="margin-top:8px">Bearbeite die Aufgaben und prüfe deine Lösungen. Mit „Neu mischen“ bekommst du jeweils eine neue Variante.</p>
+  <div class="tasks">
+
+    <section class="task" id="t1">
+      <h2>Aufgabe 1 – Bauteile benennen</h2>
+      <p class="lead">Ordne jeder Nummer im 3D-Modell die richtige Bauteilbezeichnung zu. Das Modell lässt sich drehen und zoomen; nutze den Schnitt, um innenliegende Teile zu sehen.</p>
+      <div class="split">
+        <div>
+          <div class="viewer" id="quizViewer"></div>
+          <div class="row">
+            <label class="toggles" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="qcut"> Schnittansicht</label>
+            <label style="display:flex;gap:8px;align-items:center;flex:1;min-width:200px">Explosion <input type="range" id="qexp" min="0" max="1" step="0.01" value="0" style="flex:1;accent-color:var(--accent)"></label>
+          </div>
+        </div>
+        <div>
+          <div class="namegrid" id="names" style="grid-template-columns:1fr"></div>
+          <div class="row">
+            <button class="primary" id="n-check">Prüfen</button>
+            <button id="n-solve">Lösung zeigen</button>
+            <button id="n-new">Neu mischen</button>
+            <span class="score" id="n-score"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="task" id="t2">
+      <h2>Aufgabe 2 – Kraftfluss</h2>
+      <p class="lead">Der <b id="kf-gear">1.</b> Gang ist eingelegt, die Kupplung eingerückt. Klicke die Bauteile in der Reihenfolge an, in der das Drehmoment vom Motor zur Abtriebswelle fließt. Nicht alle Bauteile liegen im Kraftfluss! Ein Klick auf ein gewähltes Bauteil legt es zurück.</p>
+      <h3>Bauteile</h3>
+      <div class="bank" id="kf-bank"></div>
+      <h3 style="margin-top:12px">Kraftfluss: Motor → … → Achsantrieb</h3>
+      <div class="seq" id="kf-seq"></div>
+      <div class="row">
+        <button class="primary" id="kf-check">Prüfen</button>
+        <button id="kf-solve">Lösung zeigen</button>
+        <button id="kf-new">Anderer Gang</button>
+        <a id="kf-model" href="index.html?gang=1" target="_blank"><button>Im 3D-Modell ansehen ↗</button></a>
+        <span class="score" id="kf-score"></span>
+      </div>
+      <p id="kf-expl" class="lead" hidden style="margin-top:10px"></p>
+    </section>
+
+    <section class="task" id="t3">
+      <h2>Aufgabe 3 – Ablauf eines Schaltvorgangs</h2>
+      <p class="lead">Bringe die Phasen der Sperrsynchronisierung in die richtige Reihenfolge (Kupplung ist bereits getrennt).</p>
+      <div class="bank" id="ph-bank"></div>
+      <h3 style="margin-top:12px">Reihenfolge</h3>
+      <div class="seq" id="ph-seq"></div>
+      <div class="row">
+        <button class="primary" id="ph-check">Prüfen</button>
+        <button id="ph-solve">Lösung zeigen</button>
+        <button id="ph-new">Neu mischen</button>
+        <span class="score" id="ph-score"></span>
+      </div>
+      <ol id="ph-expl" class="lead" hidden style="margin-top:10px"></ol>
+    </section>
+
+    <section class="task" id="t4">
+      <h2>Aufgabe 4 – Verständnisfragen</h2>
+      <div id="mc"></div>
+      <div class="row">
+        <button class="primary" id="mc-check">Auswerten</button>
+        <button id="mc-new">Neu mischen</button>
+        <span class="score" id="mc-score"></span>
+      </div>
+    </section>
+
+    <section class="task calc" id="t5">
+      <h2>Aufgabe 5 – Drehzahlen berechnen</h2>
+      <p class="lead">Das Fahrzeug fährt im <b>2. Gang</b>, die Hauptwelle dreht mit <b id="c-nout"></b>. Es soll in den <b>1. Gang</b> zurückgeschaltet werden. Runde auf ganze Zahlen (Übersetzungen auf 2 Nachkommastellen).</p>
+      <div class="data">
+        <table>
+          <tr><td>Antriebskonstante</td><td>z<sub>Antriebsrad</sub> = 16</td><td>z<sub>Konstantrad</sub> = 24</td></tr>
+          <tr><td>1. Gang</td><td>z<sub>Festrad</sub> = 14</td><td>z<sub>Losrad</sub> = 26</td></tr>
+          <tr><td>2. Gang</td><td>z<sub>Festrad</sub> = 20</td><td>z<sub>Losrad</sub> = 20</td></tr>
+        </table>
+      </div>
+      <div id="calc"></div>
+      <div class="row">
+        <button class="primary" id="c-check">Prüfen</button>
+        <button id="c-solve">Lösung zeigen</button>
+        <button id="c-new">Neue Werte</button>
+        <span class="score" id="c-score"></span>
+      </div>
+    </section>
+
+  </div>
+</main>
+<footer>Übungen zum <a href="index.html">interaktiven 3D-Modell</a> der Sperrsynchronisierung.</footer>
+<script type="module" src="js/quiz.js"></script>
+</body>
+</html>
