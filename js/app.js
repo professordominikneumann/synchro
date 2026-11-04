@@ -1,4 +1,5 @@
-import { createGearbox, PHASES, FLOW, PART, RATIO, I_K } from './gearbox.js';
+window.startApp = function (G) {
+const { createGearbox, PHASES, FLOW, PART, RATIO, I_K } = G;
 
 const $ = (id) => document.getElementById(id);
 const gb = createGearbox($('viewer'));
@@ -181,3 +182,5 @@ gb.onUpdate((s, dtReal) => {
       : '<span style="color:var(--muted)">Kraftfluss wird angezeigt, sobald ein Gang eingelegt und die Kupplung eingerückt ist.</span>';
   }
 });
+
+};

@@ -1,18 +1,17 @@
+// Klassisches Skript (funktioniert auch per file://). three.js wird von der Seite übergeben.
+window.Gearbox = function (THREE, OrbitControls, RoomEnvironment) {
 // Interaktives 3D-Modell: Sperrsynchronisierung (Bauart Borg-Warner) in einem 2-Gang-Wechselgetriebe
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // ---------- Getriebedaten ----------
-export const Z = { an: 16, k: 24, g1: 26, c1: 14, g2: 20, c2: 20 };
+const Z = { an: 16, k: 24, g1: 26, c1: 14, g2: 20, c2: 20 };
 const MOD = 0.4;
 const rp = (z) => (MOD * z) / 2;
-export const I_K = Z.k / Z.an;
-export const I1 = (I_K * Z.g1) / Z.c1;
-export const I2 = (I_K * Z.g2) / Z.c2;
-export const RATIO = { 1: I1, 2: I2 };
+const I_K = Z.k / Z.an;
+const I1 = (I_K * Z.g1) / Z.c1;
+const I2 = (I_K * Z.g2) / Z.c2;
+const RATIO = { 1: I1, 2: I2 };
 
-export const PARTS = [
+const PARTS = [
   { id: 'antriebswelle', name: 'Antriebswelle', desc: 'Getriebeeingangswelle – wird über die Kupplung vom Motor angetrieben.' },
   { id: 'antriebsrad', name: 'Antriebsrad (Konstante)', desc: 'Festrad auf der Antriebswelle; bildet mit dem Konstantrad die Antriebskonstante.' },
   { id: 'konstantrad', name: 'Konstantrad (Vorgelegewelle)', desc: 'Festrad auf der Vorgelegewelle; wird von der Antriebswelle ständig angetrieben.' },
@@ -30,14 +29,14 @@ export const PARTS = [
   { id: 'schaltgabel', name: 'Schaltgabel', desc: 'Greift in die Nut der Schiebemuffe und verschiebt sie axial (über die Schaltstange).' },
   { id: 'hauptwelle', name: 'Hauptwelle (Abtriebswelle)', desc: 'Leitet das Drehmoment zum Achsantrieb weiter; Drehzahl ist an die Fahrgeschwindigkeit gekoppelt.' },
 ];
-export const PART = Object.fromEntries(PARTS.map((p) => [p.id, p]));
+const PART = Object.fromEntries(PARTS.map((p) => [p.id, p]));
 
-export const FLOW = {
+const FLOW = {
   1: ['antriebswelle', 'antriebsrad', 'konstantrad', 'vorgelegewelle', 'festrad1', 'losrad1', 'kupplungsverzahnung', 'schiebemuffe', 'synchronkoerper', 'hauptwelle'],
   2: ['antriebswelle', 'antriebsrad', 'konstantrad', 'vorgelegewelle', 'festrad2', 'losrad2', 'kupplungsverzahnung', 'schiebemuffe', 'synchronkoerper', 'hauptwelle'],
 };
 
-export const PHASES = [
+const PHASES = [
   { key: 'neutral', name: 'Neutral', desc: 'Schiebemuffe in Mittelstellung, beide Losräder drehen frei.' },
   { key: 'leerweg', name: 'Leerweg', desc: 'Kupplung getrennt, Schiebemuffe bewegt sich mit den Druckstücken Richtung Gangrad.' },
   { key: 'vorsync', name: 'Vorsynchronisieren', desc: 'Druckstücke drücken den Synchronring auf den Reibkonus. Das Reibmoment verdreht den Ring in Sperrstellung.' },
@@ -59,7 +58,7 @@ const EPS = 4, CLASH = 80;
 const P_SYNC = (2 * Math.PI) / 30;
 
 // ---------- Simulation ----------
-export class Sim {
+class Sim {
   constructor() {
     Object.assign(this, {
       nOut: 1500, engine: 2200, nIn: 2200, force: 80, timeScale: 0.25, synchro: true,
@@ -202,7 +201,7 @@ const COLORS = {
 };
 
 // ---------- Szene ----------
-export function createGearbox(container, opts = {}) {
+function createGearbox(container, opts = {}) {
   const sim = new Sim();
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -473,3 +472,6 @@ export function createGearbox(container, opts = {}) {
     P_SYNC, A: { A_PRE, A_BLOCK, A_THRU, A_FULL },
   };
 }
+
+return { createGearbox, Sim, PARTS, PART, FLOW, PHASES, RATIO, Z, I_K, I1, I2 };
+};

@@ -109,6 +109,17 @@
   </div>
 </main>
 <footer>Übungen zum <a href="index.html">interaktiven 3D-Modell</a> der Sperrsynchronisierung.</footer>
-<script type="module" src="js/quiz.js"></script>
+<script src="js/gearbox.js"></script>
+<script src="js/quiz.js"></script>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+  window.__gbLoaded = true;
+  startQuiz(Gearbox(THREE, OrbitControls, RoomEnvironment));
+</script>
+<script>
+  setTimeout(() => { if (!window.__gbLoaded) document.querySelectorAll('.viewer').forEach((v) => { v.insertAdjacentHTML('beforeend', '<div class="loadfail">3D-Modell konnte nicht geladen werden.<br>Die Bibliothek three.js wird aus dem Internet (cdn.jsdelivr.net) geladen – bitte Internetverbindung prüfen und Seite neu laden.</div>'); }); }, 6000);
+</script>
 </body>
 </html>

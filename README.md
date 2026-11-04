@@ -17,4 +17,4 @@ Keine Build-Schritte nötig – reines HTML/CSS/JS; three.js wird vom CDN (jsDel
 
 ## Lokal testen
 
-ES-Module brauchen einen Webserver, z. B. `npx serve .` oder `python -m http.server`, dann `http://localhost:3000` bzw. `:8000` öffnen.
+Einfach `index.html` per Doppelklick öffnen (Internetverbindung nötig für three.js) – oder mit einem Webserver, z. B. `npx serve .` oder `python -m http.server`, dann `http://localhost:3000` bzw. `:8000` öffnen.

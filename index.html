@@ -99,6 +99,17 @@
   </section>
 </main>
 <footer>Vereinfachtes Lehrmodell (2-Gang-Vorgelegegetriebe, Bauart Borg-Warner). Zähnezahlen: Konstante 16/24, 1. Gang 14/26, 2. Gang 20/20.</footer>
-<script type="module" src="js/app.js"></script>
+<script src="js/gearbox.js"></script>
+<script src="js/app.js"></script>
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+  window.__gbLoaded = true;
+  startApp(Gearbox(THREE, OrbitControls, RoomEnvironment));
+</script>
+<script>
+  setTimeout(() => { if (!window.__gbLoaded) document.querySelectorAll('.viewer').forEach((v) => { v.insertAdjacentHTML('beforeend', '<div class="loadfail">3D-Modell konnte nicht geladen werden.<br>Die Bibliothek three.js wird aus dem Internet (cdn.jsdelivr.net) geladen – bitte Internetverbindung prüfen und Seite neu laden.</div>'); }); }, 6000);
+</script>
 </body>
 </html>
