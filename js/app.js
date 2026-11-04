@@ -111,8 +111,8 @@ function drawUnroll() {
   tooth(-1.2, 1.2, 0.5, '#5d6973', false, false);
   tooth(2.8, 3.4, 0.5 + gb.relAngle(side) / p, '#2c5596', true, false);
   if (sim.synchro) {
-    const shift = Math.min(Math.max((a - 0.82) / 0.08, 0), 1) * 0.08 * (Math.sign(sim.d) === (side === 1 ? -1 : 1) ? 1 : 0);
-    tooth(2.3 + shift, 2.7 + shift, 0.5 + gb.ringOffset(side) / p, '#d0a443', true, true);
+    const shift = gb.ringShift(side);
+    tooth(2.42 + shift, 2.7 + shift, 0.5 + gb.ringOffset(side) / p, '#d0a443', true, true);
   }
   ctx.globalAlpha = 0.92;
   const ua = Math.sign(sim.d) === (side === 1 ? -1 : 1) || sim.d === 0 ? a : -a;

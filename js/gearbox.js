@@ -49,7 +49,8 @@ const PHASES = [
 ];
 
 // Muffenweg-Marken (Betrag der Muffenposition)
-const A_PRE = 0.82, A_BLOCK = 1.08, A_THRU = 1.48, A_FULL = 2.0;
+const A_PRE = 0.92, A_BLOCK = 1.18, A_THRU = 1.46, A_FULL = 2.0;
+const RING_SHIFT = 0.06; // axialer Weg des Synchronrings bis zur Anlage am Konus
 const V_SLEEVE = 3.0; // Einheiten/s
 const SYNC_K = 12; // 1/min pro s und N Schaltkraft
 const F_PRE = 15; // Ersatzkraft der Druckstücke
@@ -161,6 +162,31 @@ function toothPts(rRoot, rTip, z, phase = 0, skip = null) {
   }
   return pts;
 }
+// Evolventen-Stirnverzahnung (Eingriffswinkel 20°, Kopfhöhe m, Fußhöhe 1,25 m, etwas Flankenspiel)
+const inv = (a) => Math.tan(a) - a;
+function involutePts(z, m, phase = 0) {
+  const rp = (m * z) / 2, alpha = (20 * Math.PI) / 180, rb = rp * Math.cos(alpha);
+  const ra = rp + m, rf = rp - 1.25 * m, p = (2 * Math.PI) / z;
+  const half = (Math.PI / (2 * z)) * 0.94 + inv(alpha);
+  const psi = (r) => half - inv(Math.acos(Math.min(1, rb / Math.max(r, rb))));
+  const P = (r, a) => new THREE.Vector2(r * Math.cos(a), r * Math.sin(a));
+  const radii = [];
+  if (rf < rb) radii.push(rf);
+  const r0 = Math.max(rf, rb), N = 10;
+  for (let k = 0; k <= N; k++) radii.push(r0 + ((ra - r0) * k) / N);
+  const pts = [];
+  for (let i = 0; i < z; i++) {
+    const c = phase + (i + 0.5) * p;
+    pts.push(P(rf, c - p / 2));
+    for (const r of radii) pts.push(P(r, c - psi(r)));
+    for (const r of [...radii].reverse()) pts.push(P(r, c + psi(r)));
+  }
+  return pts;
+}
+function spurGeo({ z, bore, width, x = 0, phase = 0 }) {
+  const s = new THREE.Shape(involutePts(z, MOD, phase)); s.holes.push(circlePath(bore));
+  return extrudeAxial(s, width, x);
+}
 function circlePath(r) { const p = new THREE.Path(); p.absarc(0, 0, r, 0, Math.PI * 2, false); return p; }
 function extrudeAxial(shape, width, x = 0) {
   const g = new THREE.ExtrudeGeometry(shape, { depth: width, bevelEnabled: false, curveSegments: 64 });
@@ -248,14 +274,14 @@ function createGearbox(container, opts = {}) {
   addMesh(inp.r, shaftGeo(1.0, -13, -6.7), 'antriebswelle');
   addMesh(inp.r, new THREE.BoxGeometry(2.5, 0.12, 0.3).translate(-11.5, 1.0, 0), 'antriebswelle');
   const pIn = (2 * Math.PI) / Z.an;
-  addMesh(inp.r, gearGeo({ z: Z.an, rRoot: rp(Z.an) - 0.5, rTip: rp(Z.an) + 0.4, bore: 0.99, width: 1.2, x: -7.4, phase: -Math.PI / 2 - 0.5 * pIn }), 'antriebsrad');
+  addMesh(inp.r, spurGeo({ z: Z.an, bore: 0.99, width: 1.2, x: -7.4, phase: -Math.PI / 2 - 0.5 * pIn }), 'antriebsrad');
 
   // Vorgelegewelle
   const cs = carrier(0, -8);
   addMesh(cs.r, shaftGeo(0.9, -9, 6), 'vorgelegewelle');
-  addMesh(cs.r, gearGeo({ z: Z.k, rRoot: rp(Z.k) - 0.5, rTip: rp(Z.k) + 0.4, bore: 0.89, width: 1.2, x: -7.4, phase: Math.PI / 2 }), 'konstantrad');
-  addMesh(cs.r, gearGeo({ z: Z.c1, rRoot: rp(Z.c1) - 0.5, rTip: rp(Z.c1) + 0.4, bore: 0.89, width: 1.6, x: -4.2, phase: Math.PI / 2 }), 'festrad1');
-  addMesh(cs.r, gearGeo({ z: Z.c2, rRoot: rp(Z.c2) - 0.5, rTip: rp(Z.c2) + 0.4, bore: 0.89, width: 1.6, x: 4.2, phase: Math.PI / 2 }), 'festrad2');
+  addMesh(cs.r, spurGeo({ z: Z.k, bore: 0.89, width: 1.2, x: -7.4, phase: Math.PI / 2 }), 'konstantrad');
+  addMesh(cs.r, spurGeo({ z: Z.c1, bore: 0.89, width: 1.6, x: -4.2, phase: Math.PI / 2 }), 'festrad1');
+  addMesh(cs.r, spurGeo({ z: Z.c2, bore: 0.89, width: 1.6, x: 4.2, phase: Math.PI / 2 }), 'festrad2');
 
   // Hauptwelle
   const sh = carrier();
@@ -267,9 +293,9 @@ function createGearbox(container, opts = {}) {
   function losrad(side) {
     const s = side === 1 ? -1 : 1, z = side === 1 ? Z.g1 : Z.g2, p = (2 * Math.PI) / z;
     const g = carrier();
-    addMesh(g.r, gearGeo({ z, rRoot: rp(z) - 0.5, rTip: rp(z) + 0.4, bore: 1.05, width: 1.6, x: s * 4.2, phase: -Math.PI / 2 - 0.5 * p }), 'losrad' + side, side);
+    addMesh(g.r, spurGeo({ z, bore: 1.05, width: 1.6, x: s * 4.2, phase: -Math.PI / 2 - 0.5 * p }), 'losrad' + side, side);
     addMesh(g.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 1.05, width: 0.6, x: s * 3.1 }), 'kupplungsverzahnung', side);
-    addMesh(g.r, latheGeo([[1.05, s * 2.8], [2.6, s * 2.8], [2.35, s * 1.5], [1.05, s * 1.5]]), 'reibkonus', side);
+    addMesh(g.r, latheGeo([[1.05, s * 2.8], [2.55, s * 2.8], [2.35, s * 2.0], [1.05, s * 2.0]]), 'reibkonus', side);
     return g;
   }
   const g1 = losrad(1), g2 = losrad(2);
@@ -278,8 +304,14 @@ function createGearbox(container, opts = {}) {
   function ring(side) {
     const s = side === 1 ? -1 : 1;
     const r = carrier();
-    addMesh(r.r, latheGeo([[2.62, s * 2.7], [2.88, s * 2.7], [2.88, s * 1.4], [2.4, s * 1.4]]), 'synchronring', side);
-    addMesh(r.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 2.8, width: 0.4, x: s * 2.5 }), 'synchronring', side);
+    addMesh(r.r, latheGeo([[2.54, s * 2.7], [2.8, s * 2.7], [2.8, s * 2.42], [2.56, s * 1.95], [2.35, s * 1.95]]), 'synchronring', side);
+    addMesh(r.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 2.75, width: 0.28, x: s * 2.56 }), 'synchronring', side);
+    for (let k = 0; k < 3; k++) {
+      const alpha = (k * 10 + 0.5) * P_SYNC, rr = 2.8;
+      const lug = addMesh(r.r, new THREE.BoxGeometry(0.53, 0.32, 0.3), 'synchronring', side);
+      lug.position.set(s * 1.685, rr * Math.sin(alpha), -rr * Math.cos(alpha));
+      lug.rotation.x = alpha - Math.PI / 2;
+    }
     return r;
   }
   const r1 = ring(1), r2 = ring(2);
@@ -317,8 +349,8 @@ function createGearbox(container, opts = {}) {
     konstantrad: [cs, [-7.4, -3.4, 3.6]], vorgelegewelle: [cs, [0, 0.4, 0.8]],
     festrad1: [cs, [-4.2, -1.6, 2.6]], festrad2: [cs, [4.2, -2.6, 3.4]],
     losrad1: [g1, [-4.2, 3.0, 4.6]], losrad2: [g2, [4.2, 2.5, 3.4]],
-    kupplungsverzahnung: [g1, [-3.1, -2.3, 2.3]], reibkonus: [g1, [-2.0, -1.2, 2.1]],
-    synchronring: [r1, [-2.2, 2.2, 2.0]], synchronkoerper: [hub, [-0.6, -1.3, 2.4]],
+    kupplungsverzahnung: [g1, [-3.1, -2.3, 2.3]], reibkonus: [g1, [-2.4, -1.1, 2.1]],
+    synchronring: [r1, [-2.4, 2.1, 1.9]], synchronkoerper: [hub, [-0.6, -1.3, 2.4]],
     schiebemuffe: [slv, [1.0, -3.3, 2.2]], druckstueck: [hub, [0, 2.6, 1.6]],
     schaltgabel: [fork, [0, 7.0, 0.6]], hauptwelle: [sh, [7.4, 1.0, 0.4]],
   };
@@ -380,6 +412,7 @@ function createGearbox(container, opts = {}) {
   let explode = 0;
   const ang = { in: 0, shaft: 0 };
   let ringOff = { 1: 0, 2: 0 };
+  const ringShift = { 1: 0, 2: 0 };
   const VIS = ((2 * Math.PI) / 60) * 0.06;
   const wrap = (x, p) => x - p * Math.round(x / p);
 
@@ -407,11 +440,12 @@ function createGearbox(container, opts = {}) {
       ringOff[k] += (tgt - ringOff[k]) * Math.min(1, dt * 14);
       const rr = k === 1 ? r1 : r2;
       rr.r.rotation.x = ang.shaft + ringOff[k];
-      const shift = active ? THREE.MathUtils.clamp((a - A_PRE) / 0.08, 0, 1) * 0.08 : 0;
+      const shift = active ? THREE.MathUtils.clamp((a - A_PRE) / RING_SHIFT, 0, 1) * RING_SHIFT : 0;
+      ringShift[k] = shift;
       rr.c.position.x = (k === 1 ? -1 : 1) * (shift + 1.3 * explode);
       rr.c.visible = sim.synchro;
     }
-    for (const st of struts) st.position.x = s * Math.min(a, 0.9);
+    for (const st of struts) st.position.x = s * Math.min(a, A_PRE + RING_SHIFT);
     slv.c.position.x = sim.d;
     fork.c.position.set(sim.d, 3 * explode, 0);
     g1.c.position.x = -2.6 * explode; g2.c.position.x = 2.6 * explode;
@@ -469,6 +503,7 @@ function createGearbox(container, opts = {}) {
     setHighlight(id) { highlight = id; },
     relAngle(side) { return wrap(ang.in / RATIO[side] - ang.shaft, P_SYNC); },
     ringOffset: (side) => ringOff[side],
+    ringShift: (side) => ringShift[side],
     P_SYNC, A: { A_PRE, A_BLOCK, A_THRU, A_FULL },
   };
 }
