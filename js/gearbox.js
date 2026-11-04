@@ -49,9 +49,9 @@ const PHASES = [
 ];
 
 // Muffenweg-Marken (Betrag der Muffenposition)
-const A_PRE = 0.92, A_BLOCK = 1.18, A_THRU = 1.46, A_FULL = 2.0;
+const A_PRE = 0.2, A_BLOCK = 0.48, A_THRU = 0.76, A_FULL = 1.3;
 const RING_SHIFT = 0.06; // axialer Weg des Synchronrings bis zur Anlage am Konus
-const V_SLEEVE = 3.0; // Einheiten/s
+const V_SLEEVE = 2.0; // Einheiten/s
 const SYNC_K = 12; // 1/min pro s und N Schaltkraft
 const F_PRE = 15; // Ersatzkraft der Druckstücke
 const DRAG = 60; // Schleppverlust 1/min pro s
@@ -280,8 +280,8 @@ function createGearbox(container, opts = {}) {
   const cs = carrier(0, -8);
   addMesh(cs.r, shaftGeo(0.9, -9, 6), 'vorgelegewelle');
   addMesh(cs.r, spurGeo({ z: Z.k, bore: 0.89, width: 1.2, x: -7.4, phase: Math.PI / 2 }), 'konstantrad');
-  addMesh(cs.r, spurGeo({ z: Z.c1, bore: 0.89, width: 1.6, x: -4.2, phase: Math.PI / 2 }), 'festrad1');
-  addMesh(cs.r, spurGeo({ z: Z.c2, bore: 0.89, width: 1.6, x: 4.2, phase: Math.PI / 2 }), 'festrad2');
+  addMesh(cs.r, spurGeo({ z: Z.c1, bore: 0.89, width: 1.6, x: -3.5, phase: Math.PI / 2 }), 'festrad1');
+  addMesh(cs.r, spurGeo({ z: Z.c2, bore: 0.89, width: 1.6, x: 3.5, phase: Math.PI / 2 }), 'festrad2');
 
   // Hauptwelle
   const sh = carrier();
@@ -293,9 +293,9 @@ function createGearbox(container, opts = {}) {
   function losrad(side) {
     const s = side === 1 ? -1 : 1, z = side === 1 ? Z.g1 : Z.g2, p = (2 * Math.PI) / z;
     const g = carrier();
-    addMesh(g.r, spurGeo({ z, bore: 1.05, width: 1.6, x: s * 4.2, phase: -Math.PI / 2 - 0.5 * p }), 'losrad' + side, side);
-    addMesh(g.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 1.05, width: 0.6, x: s * 3.1 }), 'kupplungsverzahnung', side);
-    addMesh(g.r, latheGeo([[1.05, s * 2.8], [2.55, s * 2.8], [2.35, s * 2.0], [1.05, s * 2.0]]), 'reibkonus', side);
+    addMesh(g.r, spurGeo({ z, bore: 1.05, width: 1.6, x: s * 3.5, phase: -Math.PI / 2 - 0.5 * p }), 'losrad' + side, side);
+    addMesh(g.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 1.05, width: 0.6, x: s * 2.4 }), 'kupplungsverzahnung', side);
+    addMesh(g.r, latheGeo([[1.05, s * 2.1], [2.55, s * 2.1], [2.35, s * 1.3], [1.05, s * 1.3]]), 'reibkonus', side);
     return g;
   }
   const g1 = losrad(1), g2 = losrad(2);
@@ -304,12 +304,12 @@ function createGearbox(container, opts = {}) {
   function ring(side) {
     const s = side === 1 ? -1 : 1;
     const r = carrier();
-    addMesh(r.r, latheGeo([[2.54, s * 2.7], [2.8, s * 2.7], [2.8, s * 2.42], [2.56, s * 1.95], [2.35, s * 1.95]]), 'synchronring', side);
-    addMesh(r.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 2.75, width: 0.28, x: s * 2.56 }), 'synchronring', side);
+    addMesh(r.r, latheGeo([[2.54, s * 2.0], [2.8, s * 2.0], [2.8, s * 1.72], [2.56, s * 1.25], [2.35, s * 1.25]]), 'synchronring', side);
+    addMesh(r.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 2.75, width: 0.28, x: s * 1.86 }), 'synchronring', side);
     for (let k = 0; k < 3; k++) {
-      const alpha = (k * 10 + 0.5) * P_SYNC, rr = 2.8;
-      const lug = addMesh(r.r, new THREE.BoxGeometry(0.53, 0.32, 0.3), 'synchronring', side);
-      lug.position.set(s * 1.685, rr * Math.sin(alpha), -rr * Math.cos(alpha));
+      const alpha = (k * 10 + 0.5) * P_SYNC, rr = 3.0;
+      const lug = addMesh(r.r, new THREE.BoxGeometry(0.3, 0.2, 0.3), 'synchronring', side);
+      lug.position.set(s * 1.1, rr * Math.sin(alpha), -rr * Math.cos(alpha));
       lug.rotation.x = alpha - Math.PI / 2;
     }
     return r;
@@ -322,7 +322,7 @@ function createGearbox(container, opts = {}) {
   const struts = [];
   for (let k = 0; k < 3; k++) {
     const alpha = (k * 10 + 0.5) * P_SYNC;
-    const st = addMesh(hub.r, new THREE.BoxGeometry(1.0, 0.26, 0.34), 'druckstueck');
+    const st = addMesh(hub.r, new THREE.BoxGeometry(1.6, 0.26, 0.34), 'druckstueck');
     const rr = 2.98;
     st.userData.base = new THREE.Vector3(0, rr * Math.sin(alpha), -rr * Math.cos(alpha));
     st.position.copy(st.userData.base);
@@ -347,10 +347,10 @@ function createGearbox(container, opts = {}) {
   const anchors = {
     antriebswelle: [inp, [-11.8, 1.1, 0.6]], antriebsrad: [inp, [-7.4, 2.4, 2.6]],
     konstantrad: [cs, [-7.4, -3.4, 3.6]], vorgelegewelle: [cs, [0, 0.4, 0.8]],
-    festrad1: [cs, [-4.2, -1.6, 2.6]], festrad2: [cs, [4.2, -2.6, 3.4]],
-    losrad1: [g1, [-4.2, 3.0, 4.6]], losrad2: [g2, [4.2, 2.5, 3.4]],
-    kupplungsverzahnung: [g1, [-3.1, -2.3, 2.3]], reibkonus: [g1, [-2.4, -1.1, 2.1]],
-    synchronring: [r1, [-2.4, 2.1, 1.9]], synchronkoerper: [hub, [-0.6, -1.3, 2.4]],
+    festrad1: [cs, [-3.5, -1.6, 2.6]], festrad2: [cs, [3.5, -2.6, 3.4]],
+    losrad1: [g1, [-3.5, 3.0, 4.6]], losrad2: [g2, [3.5, 2.5, 3.4]],
+    kupplungsverzahnung: [g1, [-2.4, -2.3, 2.3]], reibkonus: [g1, [-1.7, -1.1, 2.1]],
+    synchronring: [r1, [-1.7, 2.1, 1.9]], synchronkoerper: [hub, [-0.6, -1.3, 2.4]],
     schiebemuffe: [slv, [1.0, -3.3, 2.2]], druckstueck: [hub, [0, 2.6, 1.6]],
     schaltgabel: [fork, [0, 7.0, 0.6]], hauptwelle: [sh, [7.4, 1.0, 0.4]],
   };

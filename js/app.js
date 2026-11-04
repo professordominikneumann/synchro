@@ -91,7 +91,7 @@ function drawUnroll() {
   ctx.clearRect(0, 0, w, h);
   const side = sim.activeSide || 1;
   const a = Math.abs(sim.d);
-  const u0 = -1.5, u1 = 3.7;
+  const u0 = -1.5, u1 = 3.0;
   const U = (u) => ((u - u0) / (u1 - u0)) * w;
   const P = 56, tw = 0.36 * P, ch = 0.16;
   const tooth = (ua, ub, center, color, chamA, chamB) => {
@@ -109,10 +109,10 @@ function drawUnroll() {
   };
   const p = gb.P_SYNC;
   tooth(-1.2, 1.2, 0.5, '#5d6973', false, false);
-  tooth(2.8, 3.4, 0.5 + gb.relAngle(side) / p, '#2c5596', true, false);
+  tooth(2.1, 2.7, 0.5 + gb.relAngle(side) / p, '#2c5596', true, false);
   if (sim.synchro) {
     const shift = gb.ringShift(side);
-    tooth(2.42 + shift, 2.7 + shift, 0.5 + gb.ringOffset(side) / p, '#d0a443', true, true);
+    tooth(1.72 + shift, 2.0 + shift, 0.5 + gb.ringOffset(side) / p, '#d0a443', true, true);
   }
   ctx.globalAlpha = 0.92;
   const ua = Math.sign(sim.d) === (side === 1 ? -1 : 1) || sim.d === 0 ? a : -a;
