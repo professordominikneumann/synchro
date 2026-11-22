@@ -49,7 +49,7 @@ const PHASES = [
 ];
 
 // Muffenweg-Marken (Betrag der Muffenposition)
-const A_PRE = 0.2, A_BLOCK = 0.48, A_THRU = 0.76, A_FULL = 1.3;
+const A_PRE = 0.15, A_BLOCK = 0.48, A_THRU = 0.76, A_FULL = 1.3;
 const RING_SHIFT = 0.06; // axialer Weg des Synchronrings bis zur Anlage am Konus
 const V_SLEEVE = 2.0; // Einheiten/s
 const SYNC_K = 12; // 1/min pro s und N Schaltkraft
@@ -197,6 +197,26 @@ function gearGeo({ z, rRoot, rTip, bore, width, x = 0, phase = 0, skip }) {
   const s = new THREE.Shape(toothPts(rRoot, rTip, z, phase, skip)); s.holes.push(circlePath(bore));
   return extrudeAxial(s, width, x);
 }
+// Zähne mit Dachschrägen (Sperr-/Kupplungsverzahnung): je Zahn ein radial extrudiertes Fünfeck,
+// Spitze zeigt zur Schiebemuffe (xNear). Alle Zähne werden zu einer Geometrie zusammengefasst.
+function roofTeethGeo({ z, r0, r1, xNear, xFar, phase = 0, w = 0.15, roof = 0.12 }) {
+  const dir = Math.sign(xFar - xNear), p = (2 * Math.PI) / z;
+  const sh = new THREE.Shape([
+    new THREE.Vector2(xFar, -w), new THREE.Vector2(xNear + dir * roof, -w), new THREE.Vector2(xNear, 0),
+    new THREE.Vector2(xNear + dir * roof, w), new THREE.Vector2(xFar, w),
+  ]);
+  const proto = new THREE.ExtrudeGeometry(sh, { depth: r1 - r0, bevelEnabled: false }).toNonIndexed();
+  proto.rotateX(-Math.PI / 2); proto.translate(0, r0, 0);
+  const pos = [], nor = [], m = new THREE.Matrix4();
+  for (let i = 0; i < z; i++) {
+    const g = proto.clone().applyMatrix4(m.makeRotationX(phase + (i + 0.5) * p - Math.PI / 2));
+    pos.push(...g.attributes.position.array); nor.push(...g.attributes.normal.array);
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  return out;
+}
 function internalGeo({ z, rRoot, rTip, outer, width, x = 0, phase = 0 }) {
   const s = new THREE.Shape(); s.absarc(0, 0, outer, 0, Math.PI * 2, false);
   s.holes.push(new THREE.Path(toothPts(rRoot, rTip, z, phase)));
@@ -294,7 +314,8 @@ function createGearbox(container, opts = {}) {
     const s = side === 1 ? -1 : 1, z = side === 1 ? Z.g1 : Z.g2, p = (2 * Math.PI) / z;
     const g = carrier();
     addMesh(g.r, spurGeo({ z, bore: 1.05, width: 1.6, x: s * 3.5, phase: -Math.PI / 2 - 0.5 * p }), 'losrad' + side, side);
-    addMesh(g.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 1.05, width: 0.6, x: s * 2.4 }), 'kupplungsverzahnung', side);
+    addMesh(g.r, latheGeo([[1.05, s * 2.1], [2.86, s * 2.1], [2.86, s * 2.7], [1.05, s * 2.7]]), 'kupplungsverzahnung', side);
+    addMesh(g.r, roofTeethGeo({ z: 30, r0: 2.84, r1: 3.2, xNear: s * 2.1, xFar: s * 2.7 }), 'kupplungsverzahnung', side);
     addMesh(g.r, latheGeo([[1.05, s * 2.1], [2.55, s * 2.1], [2.35, s * 1.3], [1.05, s * 1.3]]), 'reibkonus', side);
     return g;
   }
@@ -304,12 +325,13 @@ function createGearbox(container, opts = {}) {
   function ring(side) {
     const s = side === 1 ? -1 : 1;
     const r = carrier();
-    addMesh(r.r, latheGeo([[2.54, s * 2.0], [2.8, s * 2.0], [2.8, s * 1.72], [2.56, s * 1.25], [2.35, s * 1.25]]), 'synchronring', side);
-    addMesh(r.r, gearGeo({ z: 30, rRoot: 2.85, rTip: 3.2, bore: 2.75, width: 0.28, x: s * 1.86 }), 'synchronring', side);
+    addMesh(r.r, latheGeo([[2.54, s * 2.0], [2.86, s * 2.0], [2.86, s * 1.72], [2.6, s * 1.6], [2.6, s * 1.25], [2.35, s * 1.25]]), 'synchronring', side);
+    addMesh(r.r, roofTeethGeo({ z: 30, r0: 2.84, r1: 3.2, xNear: s * 1.72, xFar: s * 2.0 }), 'synchronring', side);
+    // Mitnehmernasen: radial am kleinen Ende, greifen in die Aussparungen der Druckstücke
     for (let k = 0; k < 3; k++) {
-      const alpha = (k * 10 + 0.5) * P_SYNC, rr = 3.0;
-      const lug = addMesh(r.r, new THREE.BoxGeometry(0.3, 0.2, 0.3), 'synchronring', side);
-      lug.position.set(s * 1.1, rr * Math.sin(alpha), -rr * Math.cos(alpha));
+      const alpha = (k * 10 + 0.5) * P_SYNC, rr = 2.78;
+      const lug = addMesh(r.r, new THREE.BoxGeometry(0.25, 0.44, 0.32), 'synchronring', side);
+      lug.position.set(s * 1.375, rr * Math.sin(alpha), -rr * Math.cos(alpha));
       lug.rotation.x = alpha - Math.PI / 2;
     }
     return r;
@@ -322,7 +344,7 @@ function createGearbox(container, opts = {}) {
   const struts = [];
   for (let k = 0; k < 3; k++) {
     const alpha = (k * 10 + 0.5) * P_SYNC;
-    const st = addMesh(hub.r, new THREE.BoxGeometry(1.6, 0.26, 0.34), 'druckstueck');
+    const st = addMesh(hub.r, new THREE.BoxGeometry(2.2, 0.26, 0.34), 'druckstueck');
     const rr = 2.98;
     st.userData.base = new THREE.Vector3(0, rr * Math.sin(alpha), -rr * Math.cos(alpha));
     st.position.copy(st.userData.base);
